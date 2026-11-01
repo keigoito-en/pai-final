@@ -19,6 +19,8 @@ for T in $TASKS; do
     --output_dir="$OUT/${SUITE}_task${T}" \
     --policy.path="$POLICY" \
     --policy.n_action_steps=10 \
+    --policy.compile_model=false \
+    --eval.use_async_envs=false \
     --env.type=libero \
     --env.task="$SUITE" \
     --env.task_ids="[$T]" \
