@@ -1,6 +1,6 @@
-# PAI最終課題: 既存VLA(π0.5)による言語指示ロボット操作
+# PAI最終課題: 既存VLA(SmolVLA)による言語指示ロボット操作
 
-LeRobot で公開されている π0.5 の LIBERO 向けチェックポイント(`lerobot/pi05_libero_finetuned`)を、
+LeRobot で公開されている SmolVLA の LIBERO 向けチェックポイント(`HuggingFaceVLA/smolvla_libero`)を、
 追加学習なしで LIBERO シミュレーション上で推論実行し、言語指示に従ったロボットアーム操作を動画にする。
 
 - `run_vla.sh` : `lerobot-eval` による推論実行 (スイート/タスク/エピソード数は環境変数で指定)
@@ -12,5 +12,5 @@ Colab で `run_colab.ipynb` を開き、GPUランタイムを選んで上から�
 
 ## 出典
 - LeRobot: https://github.com/huggingface/lerobot
-- π0.5 (Physical Intelligence) / `lerobot/pi05_libero_finetuned`
+- SmolVLA (Hugging Face) / `HuggingFaceVLA/smolvla_libero`
 - LIBERO ベンチマーク

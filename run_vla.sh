@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 既存VLA (pi0.5, LeRobot公開チェックポイント) を LIBERO シミュレーション上で推論実行する。
+# 既存VLA (SmolVLA, LeRobot公開チェックポイント) を LIBERO シミュレーション上で推論実行する。
 # 学習は行わない (推論のみ)。
 # メモリ節約のため、タスクごとに別プロセスで実行する (Colab無料枠のRAM不足対策)。
 set -uo pipefail
@@ -7,7 +7,7 @@ set -uo pipefail
 export MUJOCO_GL=egl
 export PYOPENGL_PLATFORM=egl
 
-POLICY=${POLICY:-lerobot/pi05_libero_finetuned}
+POLICY=${POLICY:-HuggingFaceVLA/smolvla_libero}
 OUT=${OUT:-./eval_logs}
 SUITE=${SUITE:-libero_object}
 TASKS=${TASKS:-"0 1 2"}      # 空白区切りのタスク番号
@@ -18,8 +18,6 @@ for T in $TASKS; do
   lerobot-eval \
     --output_dir="$OUT/${SUITE}_task${T}" \
     --policy.path="$POLICY" \
-    --policy.n_action_steps=10 \
-    --policy.compile_model=false \
     --eval.use_async_envs=false \
     --env.type=libero \
     --env.task="$SUITE" \
