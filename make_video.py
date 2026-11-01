@@ -8,6 +8,7 @@ import json
 import subprocess
 import sys
 import tempfile
+import textwrap
 from pathlib import Path
 
 root = Path(sys.argv[1])
@@ -29,38 +30,39 @@ def esc(text):
     return text.replace("\\", "\\\\").replace(":", "\\:").replace("'", "’").replace("%", "\\%")
 
 
-def size_of(path):
-    r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
-                        "stream=width,height", "-of", "csv=s=x:p=0", str(path)],
-                       capture_output=True, text=True, check=True)
-    w, h = r.stdout.strip().split("x")
-    return int(w), int(h)
-
-
 clips = sorted(root.rglob("*.mp4"), key=lambda p: (p.parent.name.rsplit("_", 1)[0],
                                                     int(p.parent.name.rsplit("_", 1)[1]), p.name))
 if not clips:
     sys.exit(f"no mp4 found under {root}")
 
-w, h = size_of(clips[0])
+W, H, V = 1280, 720, 720          # 出力サイズ / ロボット映像の一辺 (左に配置し、右の余白に指示文を出す)
 tmp = Path(tempfile.mkdtemp())
+
+
+def lines_filter(lines, x, y0, size, step):
+    """行ごとに drawtext を並べる (折り返しは呼び出し側で行う)。x は式も可。"""
+    return ",".join(
+        f"drawtext=fontfile={FONT}:text='{esc(l)}':x={x}:y={y0 + k * step}:fontsize={size}:fontcolor=white"
+        for k, l in enumerate(lines))
+
+
 parts = []
 for i, clip in enumerate(clips):
     key = clip.parent.name                      # e.g. libero_10_0
     text = instr.get(key, key.replace("_", " "))
     suite = key.rsplit("_", 1)[0]
     head = f"[{i + 1}/{len(clips)}] {suite}"
+    body = textwrap.wrap(text, 40)
 
     card = tmp / f"c{i}.mp4"
-    vf = (f"drawtext=fontfile={FONT}:text='{esc(head)}':x=(w-tw)/2:y=h/2-40:fontsize=22:fontcolor=white,"
-          f"drawtext=fontfile={FONT}:text='{esc(text)}':x=(w-tw)/2:y=h/2:fontsize=16:fontcolor=white")
-    run("-f", "lavfi", "-i", f"color=c=black:s={w}x{h}:r={FPS}:d={card_sec}", "-vf", vf,
+    vf = lines_filter([head], "(w-tw)/2", 250, 36, 0) + "," + lines_filter(body, "(w-tw)/2", 310, 30, 44)
+    run("-f", "lavfi", "-i", f"color=c=black:s={W}x{H}:r={FPS}:d={card_sec}", "-vf", vf,
         "-pix_fmt", "yuv420p", card)
 
     part = tmp / f"p{i}.mp4"
-    cap = esc(text + (f"  (x{speed:g} speed)" if speed != 1.0 else ""))
-    vf = (f"setpts=PTS/{speed},fps={FPS},"
-          f"drawtext=fontfile={FONT}:text='{cap}':x=8:y=h-th-8:fontsize=14:fontcolor=white:box=1:boxcolor=black@0.6")
+    side = [head] + [""] + textwrap.wrap(text, 24) + ([""] + [f"(x{speed:g} speed)"] if speed != 1.0 else [])
+    vf = (f"setpts=PTS/{speed},fps={FPS},scale={V}:{V}:flags=lanczos,pad={W}:{H}:0:0:black,"
+          + lines_filter(side, V + 30, 60, 30, 42))
     run("-i", clip, "-vf", vf, "-an", "-pix_fmt", "yuv420p", part)
     parts += [card, part]
 
